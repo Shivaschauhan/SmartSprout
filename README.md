@@ -12,7 +12,7 @@ SmartSprout utilizes a robust, feedback-driven **LangGraph multi-agent flow** po
 graph TD
     User([User Request / Custom Instructions]) --> UnifiedPlanner[Unified Planner Node]
     
-    subgraph Unified Planner (Concurrent Execution)
+    subgraph "Unified Planner (Concurrent Execution)"
         UnifiedPlanner --> MealPlanner[Meal Planner Sub-Agent]
         UnifiedPlanner --> WorkoutPlanner[Workout Planner Sub-Agent]
         MealPlanner --> Combine[Combine Plan Drafts]
@@ -21,7 +21,7 @@ graph TD
 
     Combine --> SafetyCritic[Safety Critic Node]
 
-    subgraph Safety & Constraint Validation
+    subgraph "Safety & Constraint Validation"
        SafetyCritic --> SafetyRules{Are medical guidelines & <br>custom instructions met?}
     end
 
@@ -110,10 +110,3 @@ Ensure you have the following installed on your machine:
    ```
 
 Open your browser and navigate to `http://localhost:5173` to experience the app!
-
----
-
-## 🔒 Production Security & Deployment
-* **Database**: In production, swap the local SQLite database URL in `core/config.py` with your database of choice (e.g. PostgreSQL).
-* **Secrets**: Never commit your `.env` file. Add your `GEMINI_API_KEY` and `JWT_SECRET` directly to your hosting provider's Environment Variables panel.
-* **Builds**: Compile the client using `npm run build` inside the `frontend` folder and serve the static `dist/` bundle.
