@@ -1,0 +1,16 @@
+fastapi[standard]
+pyjwt
+passlib[bcrypt]
+psycopg2-binary
+pydantic-settings
+alembic
+sqlalchemy
+langchain-google-genai
+langchain
+langchain-community
+faiss-cpu
+tiktoken
+langgraph
+pytz
+pillow
+python-multipart

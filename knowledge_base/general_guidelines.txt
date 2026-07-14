@@ -1,0 +1,24 @@
+SmartSprout Expert Nutritional Guidelines
+
+1. General Principles
+- A balanced meal consists of lean proteins, complex carbohydrates, and healthy fats.
+- Hydration is key: aim for at least 2 liters of water a day.
+- Limit added sugars and highly processed foods.
+
+2. Dietary Preferences & Restrictions
+- Vegetarian: Ensure adequate protein intake from sources like lentils, beans, tofu, and dairy. Iron and B12 might need supplementation.
+- Vegan: No animal products. Rely on plant-based proteins. Combine different plant proteins to get all essential amino acids (e.g., rice and beans). Pay close attention to B12, Iron, Calcium, and Omega-3s.
+- Keto (Ketogenic): High fat, moderate protein, very low carbohydrate. Keep net carbs under 50g per day (or lower). Focus on meats, eggs, cheeses, oils, and non-starchy vegetables. Avoid grains, sugars, and most fruits.
+- Paleo: Eat whole foods like meat, fish, eggs, vegetables, fruits, and nuts. Avoid processed foods, sugar, grains, and dairy.
+
+3. Goal-Specific Guidelines
+- Weight Loss (Cutting): Create a caloric deficit (eat fewer calories than burned). Prioritize high-protein and high-fiber foods to increase satiety. Keep meals balanced but reduce portion sizes of fats and carbs slightly.
+- Muscle Gain (Bulking): Create a caloric surplus. Increase protein intake (approx. 1.6-2.2g per kg of body weight). Ensure enough carbohydrates to fuel workouts and recovery.
+- Maintenance: Eat at maintenance calories. Focus on food quality and consistent meal timing.
+
+4. Meal Structure Rules (CRITICAL FOR MEAL PLAN GENERATION)
+- Do NOT generate empty meals. Every meal must have at least one food item.
+- Ensure the unit matches the `reference_unit` of the food items provided in the prompt.
+- The quantity should be realistic for a single meal portion.
+- For breakfast, include a good source of protein to start the day.
+- For dinner, keep it relatively light on carbs if weight loss is the goal, or include complex carbs if muscle gain is the goal.

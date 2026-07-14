@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pytz = "*"
+fastapi = {extras = ["standard"], version = "*"}
+pyjwt = "*"
+passlib = {extras = ["bcrypt"], version = "==1.7.4"}
+bcrypt = "==4.3.0"
+pydantic-settings = "*"
+alembic = "*"
+psycopg2-binary = "*"
+sqlalchemy = "*"
+langchain-google-genai = "*"
+langchain = "*"
+langchain-community = "*"
+faiss-cpu = "*"
+tiktoken = "*"
+langgraph = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.13"
