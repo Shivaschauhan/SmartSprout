@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.add_column("food_items", sa.Column("category", sa.String(length=32), server_default="food", nullable=True))
-    op.add_column("food_items", sa.Column("is_drink", sa.Boolean(), server_default=sa.text("0"), nullable=True))
+    op.add_column("food_items", sa.Column("is_drink", sa.Boolean(), server_default=sa.text("false"), nullable=True))
     op.add_column("food_items", sa.Column("source", sa.String(length=32), server_default="system", nullable=True))
     op.add_column("food_items", sa.Column("user_id", sa.Integer(), nullable=True))
     op.add_column("food_items", sa.Column("brand", sa.Text(), nullable=True))
@@ -40,8 +40,8 @@ def upgrade() -> None:
     op.create_index("ix_food_logs_user_logged", "food_logs", ["user_id", "logged_at"], unique=False)
 
     # Backfill: mark milk as drink if present
-    op.execute("UPDATE food_items SET category='drink', is_drink=1 WHERE lower(name) LIKE '%milk%'")
-    op.execute("UPDATE food_items SET category=COALESCE(category, 'food'), is_drink=COALESCE(is_drink, 0), source=COALESCE(source, 'system')")
+    op.execute("UPDATE food_items SET category='drink', is_drink=true WHERE lower(name) LIKE '%milk%'")
+    op.execute("UPDATE food_items SET category=COALESCE(category, 'food'), is_drink=COALESCE(is_drink, false), source=COALESCE(source, 'system')")
 
 
 def downgrade() -> None:
