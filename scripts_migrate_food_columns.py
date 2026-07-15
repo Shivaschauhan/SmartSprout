@@ -4,7 +4,7 @@ from db.session import engine
 
 STMTS = [
     "ALTER TABLE food_items ADD COLUMN category VARCHAR(32) DEFAULT 'food'",
-    "ALTER TABLE food_items ADD COLUMN is_drink BOOLEAN DEFAULT 0",
+    "ALTER TABLE food_items ADD COLUMN is_drink BOOLEAN DEFAULT FALSE",
     "ALTER TABLE food_items ADD COLUMN source VARCHAR(32) DEFAULT 'system'",
     "ALTER TABLE food_items ADD COLUMN user_id INTEGER",
     "ALTER TABLE food_items ADD COLUMN brand TEXT",

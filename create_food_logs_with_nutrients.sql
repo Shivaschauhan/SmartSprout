@@ -14,7 +14,7 @@ SELECT
     CASE
         WHEN fl.unit = fi.reference_unit
             THEN fl.quantity * fi.reference_amount
-        ELSE fl.quantity * COALESCE(CAST(json_extract(fi.unit_conversions, '$.' || fl.unit) AS NUMERIC), 0)
+        ELSE fl.quantity * COALESCE(CAST(fi.unit_conversions->>fl.unit AS NUMERIC), 0)
     END AS grams_consumed,
 
     -- Nutrients calculation
@@ -24,7 +24,7 @@ SELECT
             CASE
                 WHEN fl.unit = fi.reference_unit
                     THEN fl.quantity
-                ELSE COALESCE((fl.quantity * CAST(json_extract(fi.unit_conversions, '$.' || fl.unit) AS NUMERIC)) / fi.reference_amount, 0)
+                ELSE COALESCE((fl.quantity * CAST(fi.unit_conversions->>fl.unit AS NUMERIC)) / fi.reference_amount, 0)
             END
         ), 2
     ) AS total_calories,
@@ -35,7 +35,7 @@ SELECT
             CASE
                 WHEN fl.unit = fi.reference_unit
                     THEN fl.quantity
-                ELSE COALESCE((fl.quantity * CAST(json_extract(fi.unit_conversions, '$.' || fl.unit) AS NUMERIC)) / fi.reference_amount, 0)
+                ELSE COALESCE((fl.quantity * CAST(fi.unit_conversions->>fl.unit AS NUMERIC)) / fi.reference_amount, 0)
             END
         ), 2
     ) AS total_protein,
@@ -46,7 +46,7 @@ SELECT
             CASE
                 WHEN fl.unit = fi.reference_unit
                     THEN fl.quantity
-                ELSE COALESCE((fl.quantity * CAST(json_extract(fi.unit_conversions, '$.' || fl.unit) AS NUMERIC)) / fi.reference_amount, 0)
+                ELSE COALESCE((fl.quantity * CAST(fi.unit_conversions->>fl.unit AS NUMERIC)) / fi.reference_amount, 0)
             END
         ), 2
     ) AS total_carbs,
@@ -57,7 +57,7 @@ SELECT
             CASE
                 WHEN fl.unit = fi.reference_unit
                     THEN fl.quantity
-                ELSE COALESCE((fl.quantity * CAST(json_extract(fi.unit_conversions, '$.' || fl.unit) AS NUMERIC)) / fi.reference_amount, 0)
+                ELSE COALESCE((fl.quantity * CAST(fi.unit_conversions->>fl.unit AS NUMERIC)) / fi.reference_amount, 0)
             END
         ), 2
     ) AS total_fats
