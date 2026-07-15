@@ -25,8 +25,19 @@ class GraphState(TypedDict):
 
 def extract_json(text) -> dict | list:
     import ast
-    if isinstance(text, list):
-        text = "".join(part["text"] for part in text if "text" in part)
+    import json
+    if isinstance(text, (dict, list)) and not isinstance(text, str):
+        if isinstance(text, list):
+            try:
+                text = "".join(part["text"] if isinstance(part, dict) and "text" in part else str(part) for part in text)
+            except Exception:
+                text = str(text)
+        else:
+            return text
+            
+    if not isinstance(text, str):
+        text = str(text)
+        
     match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
     if not match:
         raise ValueError("No JSON object or array found in AI response")

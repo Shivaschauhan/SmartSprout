@@ -166,10 +166,10 @@ async def _generate_complete_plan_task(task_id: str, user_id: int, target_day: i
     db = SessionLocal()
     try:
         TASKS[task_id] = {"status": "processing", "message": "Agents coordinating meal + workout plans…"}
-        food_list = _food_list_for_user(db, user_profile)
+        food_list = await asyncio.to_thread(_food_list_for_user, db, user_profile)
 
         plan = await generate_complete_health_plan(user_profile, food_list, target_day, custom_instructions)
-        plan_record, plan_dict = _persist_complete_plan(db, user_id, plan, target_day)
+        plan_record, plan_dict = await asyncio.to_thread(_persist_complete_plan, db, user_id, plan, target_day)
 
         TASKS[task_id] = {
             "status": "completed",
@@ -270,7 +270,7 @@ async def auto_generate_complete_plan_sync(
     target_day = day if day is not None else (days if days is not None else current_day)
     current_user = request.state.user
 
-    food_list = _food_list_for_user(db, {
+    food_list = await asyncio.to_thread(_food_list_for_user, db, {
         "dietary_prefs": current_user.dietary_prefs,
         "goals": current_user.goals,
     })
@@ -288,7 +288,7 @@ async def auto_generate_complete_plan_sync(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Graph execution failed: {e}")
 
-    plan_record, plan_dict = _persist_complete_plan(db, current_user.id, plan, target_day)
+    plan_record, plan_dict = await asyncio.to_thread(_persist_complete_plan, db, current_user.id, plan, target_day)
     return {
         "message": "Complete health plan generated successfully via LangGraph Agents",
         "plan_id": plan_record.id,

@@ -267,10 +267,11 @@ async def chat_with_image(
             raise HTTPException(status_code=400, detail="File must be an image")
 
     try:
-        response_text = run_chat_agent(
+        response_text = await asyncio.to_thread(
+            run_chat_agent,
             db, user, messages_list,
-            image_bytes=image_bytes if image_bytes else None,
-            image_mime=image_mime,
+            image_bytes if image_bytes else None,
+            image_mime,
         )
         
         ai_db_msg = ChatMessage(
