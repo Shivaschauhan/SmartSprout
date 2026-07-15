@@ -81,21 +81,29 @@ Ensure you have the following installed on your machine:
    ```bash
    pip install -r requirements.txt
    ```
-4. Create a `.env` file in the root directory and add your credentials:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   JWT_SECRET=your_jwt_secret_here
-   ```
-5. Apply database migrations:
+4. Configure your environment variables:
+   * Copy the template file:
+     ```bash
+     cp .env.example .env
+     ```
+   * Open the newly created `.env` file and paste your actual `GEMINI_API_KEY` (required for AI plan generation and chat).
+5. Apply database migrations to build local database:
    ```bash
    alembic upgrade head
    ```
-6. Run the FastAPI development server:
+6. **Seed the database (CRITICAL)**:
+   * Populate default food items, exercises, and calorie metadata:
+     ```bash
+     python seed_data.py
+     ```
+     *(If you skip this step, the app catalog will be empty, and food/exercise logging will fail).*
+7. Run the FastAPI development server:
    ```bash
    uvicorn main:app --reload
    ```
 
 ### 3. Frontend Setup
+Open a **new terminal window** (keep the backend server running in the first one):
 1. Navigate to the `frontend` folder:
    ```bash
    cd frontend
@@ -110,3 +118,4 @@ Ensure you have the following installed on your machine:
    ```
 
 Open your browser and navigate to `http://localhost:5173` to experience the app!
+
