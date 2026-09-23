@@ -20,3 +20,17 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Fail fast with a clear message when the key is obviously the wrong type.
+# Google AI Studio API keys start with "AIza"; OAuth access tokens ("AQ.Ab8...")
+# are NOT valid here and cause 401 UNAUTHENTICATED / ACCESS_TOKEN_TYPE_UNSUPPORTED.
+if not settings.GEMINI_API_KEY.startswith("AIza"):
+    import warnings
+
+    warnings.warn(
+        "GEMINI_API_KEY does not look like a Google AI Studio API key "
+        "(expected prefix 'AIza...'). It appears to be an OAuth access token, "
+        "which is not supported by the Generative Language API. "
+        "Generate a proper key at https://aistudio.google.com/apikey and put it in .env",
+        stacklevel=1,
+    )

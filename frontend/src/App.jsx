@@ -21,6 +21,8 @@ import {
   X,
   Trash2,
   History,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import {
   API_BASE,
@@ -58,6 +60,22 @@ export default function App() {
     }
   });
   const [screen, setScreen] = useState(token ? (user?.is_onboarded ? 'dashboard' : 'onboarding') : 'login');
+
+  // Theme: persisted preference, falls back to the OS setting
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'light' ? '#f5f7fb' : '#0c121c');
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   const [todayWater, setTodayWater] = useState(0);
   const [todaySteps, setTodaySteps] = useState(0);
@@ -855,9 +873,7 @@ export default function App() {
   };
 
   const calorieTarget = user?.goals === 'weight loss' ? 1800 : user?.goals === 'weight gain' ? 2800 : 2200;
-  const strokeDash = 2 * Math.PI * 70;
-  const progressRatio = Math.min(todayCaloriesIn / calorieTarget, 1);
-  const strokeOffset = strokeDash - progressRatio * strokeDash;
+  const progressPct = Math.round(Math.min(todayCaloriesIn / calorieTarget, 1) * 100);
 
   return (
     <div className="app-container">
@@ -882,10 +898,17 @@ export default function App() {
             </div>
           </div>
           <div className="sidebar-footer">
-            <div className="sidebar-user" onClick={() => setScreen('profile')} style={{ cursor: 'pointer' }}>
+            <div className={`sidebar-user ${screen === 'profile' ? 'active' : ''}`} onClick={() => setScreen('profile')}>
               <UserIcon size={18} style={{ color: 'var(--color-emerald)' }} />
-              <span className="sidebar-user-name" title={user?.email} style={{ fontWeight: screen === 'profile' ? '600' : 'normal', color: screen === 'profile' ? 'var(--color-emerald)' : 'inherit' }}>{user?.name || 'User'}</span>
+              <span className="sidebar-user-name" title={user?.email}>{user?.name || 'User'}</span>
             </div>
+            <button className="sidebar-appearance" onClick={toggleTheme}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                Appearance
+              </span>
+              <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
+            </button>
             <button className="sidebar-btn-logout" onClick={handleLogout}>
               <LogOut size={16} /><span>Logout</span>
             </button>
@@ -896,13 +919,24 @@ export default function App() {
       <div className="main-content-wrapper">
         {token && (
           <div className="header-bar">
-            <div className="header-title" onClick={() => setScreen('dashboard')} style={{ cursor: 'pointer' }}>SmartSprout</div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button className="btn btn-secondary" style={{ padding: '8px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px', border: screen === 'profile' ? '1px solid var(--color-emerald)' : '1px solid var(--panel-border)', background: screen === 'profile' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.03)' }} onClick={() => setScreen('profile')} title="Profile">
-                <UserIcon size={16} style={{ color: 'var(--color-emerald)' }} />
-                <span className="profile-btn-txt" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{user?.name || 'Profile'}</span>
+            <div className="header-title" onClick={() => setScreen('dashboard')}>SmartSprout</div>
+            <div className="header-actions">
+              <button
+                className={`btn btn-secondary btn-icon theme-toggle-btn ${theme === 'light' ? 'active' : ''}`}
+                onClick={toggleTheme}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </button>
-              <button className="btn btn-secondary" style={{ padding: '8px 12px', borderRadius: '10px' }} onClick={handleLogout} title="Logout">
+              <button
+                className={`btn btn-secondary btn-sm header-profile-btn ${screen === 'profile' ? 'active' : ''}`}
+                onClick={() => setScreen('profile')}
+                title="Profile"
+              >
+                <UserIcon size={15} style={{ color: 'var(--color-emerald)' }} />
+                <span className="profile-btn-txt">{user?.name || 'Profile'}</span>
+              </button>
+              <button className="btn btn-secondary btn-icon" onClick={handleLogout} title="Logout">
                 <LogOut size={16} />
               </button>
             </div>
@@ -911,14 +945,14 @@ export default function App() {
 
         {screen === 'login' && (
           <div className="screen-content auth-screen animate-slide-up">
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ display: 'inline-flex', padding: '16px', background: 'rgba(16, 185, 129, 0.15)', borderRadius: '24px', color: 'var(--color-emerald)', marginBottom: '16px' }}>
-                <Brain size={48} className="pulse-glow" style={{ borderRadius: '50%' }} />
+            <div className="auth-brand">
+              <div className="auth-logo">
+                <Brain size={40} />
               </div>
-              <h2>Welcome to SmartSprout</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Advanced Agentic Health & Nutrition</p>
+              <h2>SmartSprout</h2>
+              <p>Your personal AI health companion</p>
             </div>
-            <form className="card" onSubmit={handleLogin}>
+            <form className="card auth-card" onSubmit={handleLogin}>
               <div className="input-group">
                 <label className="input-label">Email</label>
                 <input className="input-field" type="email" placeholder="you@domain.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -927,64 +961,68 @@ export default function App() {
                 <label className="input-label">Password</label>
                 <input className="input-field" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
-              {errorMsg && <p style={{ color: 'red', fontSize: '13px', marginBottom: '12px' }}>{errorMsg}</p>}
-              <button className="btn" type="submit" style={{ width: '100%' }} disabled={loginLoading}>
-                {loginLoading ? <span className="spinner" style={{ marginRight: '8px' }} /> : null}
-                Login
+              {errorMsg && <p className="form-error">{errorMsg}</p>}
+              <button className="btn btn-block" type="submit" disabled={loginLoading}>
+                {loginLoading ? <span className="spinner" /> : null}
+                Sign in
               </button>
             </form>
-            <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>
-              New to SmartSprout?{' '}
-              <span style={{ color: 'var(--color-emerald)', cursor: 'pointer', fontWeight: 600 }} onClick={() => setScreen('register')}> Register</span>
+            <p className="link-text">
+              New here?{' '}
+              <span className="link-action" onClick={() => setScreen('register')}>Create an account</span>
             </p>
           </div>
         )}
 
         {screen === 'register' && (
           <div className="screen-content auth-screen animate-slide-up">
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <h2>Create Account</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Start your sustainable AI health path</p>
+            <div className="auth-brand">
+              <div className="auth-logo">
+                <Brain size={36} />
+              </div>
+              <h2>Create account</h2>
+              <p>Set up your wellness profile in minutes</p>
             </div>
-            <form className="card" onSubmit={handleRegister}>
+            <form className="card auth-card" onSubmit={handleRegister}>
               <div className="input-group">
-                <label className="input-label">Full Name</label>
-                <input className="input-field" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
+                <label className="input-label">Full name</label>
+                <input className="input-field" type="text" placeholder="Your name" required value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Email Address</label>
-                <input className="input-field" type="email" placeholder="john@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <label className="input-label">Email</label>
+                <input className="input-field" type="email" placeholder="you@domain.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="input-group">
                 <label className="input-label">Password</label>
-                <input className="input-field" type="password" placeholder="Min. 8 characters" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <input className="input-field" type="password" placeholder="At least 8 characters" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
-              {errorMsg && <p style={{ color: 'red', fontSize: '13px', marginBottom: '12px' }}>{errorMsg}</p>}
-              <button className="btn" type="submit" style={{ width: '100%' }} disabled={registerLoading}>
-                {registerLoading ? <span className="spinner" style={{ marginRight: '8px' }} /> : null}
-                Register
+              {errorMsg && <p className="form-error">{errorMsg}</p>}
+              <button className="btn btn-block" type="submit" disabled={registerLoading}>
+                {registerLoading ? <span className="spinner" /> : null}
+                Continue
               </button>
             </form>
-            <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            <p className="link-text">
               Already have an account?{' '}
-              <span style={{ color: 'var(--color-emerald)', cursor: 'pointer', fontWeight: 600 }} onClick={() => setScreen('login')}> Sign In</span>
+              <span className="link-action" onClick={() => setScreen('login')}>Sign in</span>
             </p>
           </div>
         )}
 
         {screen === 'onboarding' && (
           <div className="screen-content onboarding-screen animate-slide-up">
-            <div>
-              <h2>Let's Personalize</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Configure your SmartSprout agentic settings</p>
+            <div className="screen-header">
+              <span className="screen-kicker">Step 1 of 1</span>
+              <h2>Personalize your plan</h2>
+              <p className="screen-subtitle">These preferences guide meals, workouts, and safety checks.</p>
             </div>
-            <form className="card" onSubmit={handleOnboardingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div className="input-group" style={{ flex: 1 }}>
+            <form className="card form-stack" onSubmit={handleOnboardingSubmit}>
+              <div className="form-row">
+                <div className="input-group">
                   <label className="input-label">Age</label>
                   <input className="input-field" type="number" min="1" max="120" value={onboardAge} onChange={(e) => setOnboardAge(e.target.value === '' ? '' : parseInt(e.target.value))} />
                 </div>
-                <div className="input-group" style={{ flex: 1 }}>
+                <div className="input-group">
                   <label className="input-label">Gender</label>
                   <select className="input-field input-select" value={onboardGender} onChange={(e) => setOnboardGender(e.target.value)}>
                     <option value="male">Male</option>
@@ -993,48 +1031,76 @@ export default function App() {
                   </select>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div className="input-group" style={{ flex: 1 }}>
+              <div className="form-row">
+                <div className="input-group">
                   <label className="input-label">Height (cm)</label>
                   <input className="input-field" type="number" value={onboardHeight} onChange={(e) => setOnboardHeight(e.target.value === '' ? '' : parseFloat(e.target.value))} />
                 </div>
-                <div className="input-group" style={{ flex: 1 }}>
+                <div className="input-group">
                   <label className="input-label">Weight (kg)</label>
                   <input className="input-field" type="number" value={onboardWeight} onChange={(e) => setOnboardWeight(e.target.value === '' ? '' : parseFloat(e.target.value))} />
                 </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Dietary Preference</label>
-                <div className="choices-grid">
-                  <div className={`choice-chip ${onboardDiet.includes('veg') ? 'selected' : ''}`} onClick={() => setOnboardDiet(['veg'])}>Vegetarian</div>
-                  <div className={`choice-chip ${onboardDiet.includes('vegan') ? 'selected' : ''}`} onClick={() => setOnboardDiet(['vegan'])}>Vegan</div>
-                  <div className={`choice-chip ${onboardDiet.includes('non-veg') ? 'selected' : ''}`} onClick={() => setOnboardDiet(['non-veg'])}>Non-Vegetarian</div>
+                <label className="input-label">Diet</label>
+                <div className="choices-grid cols-3">
+                  <div className={`choice-chip compact ${onboardDiet.includes('veg') ? 'selected' : ''}`} onClick={() => setOnboardDiet(['veg'])} role="button" tabIndex={0}>
+                    <span className="choice-title">Vegetarian</span>
+                    <span className="choice-desc">Plant-based + dairy/eggs</span>
+                  </div>
+                  <div className={`choice-chip compact ${onboardDiet.includes('vegan') ? 'selected' : ''}`} onClick={() => setOnboardDiet(['vegan'])} role="button" tabIndex={0}>
+                    <span className="choice-title">Vegan</span>
+                    <span className="choice-desc">Fully plant-based</span>
+                  </div>
+                  <div className={`choice-chip compact ${onboardDiet.includes('non-veg') ? 'selected' : ''}`} onClick={() => setOnboardDiet(['non-veg'])} role="button" tabIndex={0}>
+                    <span className="choice-title">Non-veg</span>
+                    <span className="choice-desc">Includes meat & fish</span>
+                  </div>
                 </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Goal</label>
-                <select className="input-field input-select" value={onboardGoal} onChange={(e) => setOnboardGoal(e.target.value)}>
-                  <option value="weight loss">Weight Loss (Deficit)</option>
-                  <option value="weight gain">Muscle Gain (Surplus)</option>
-                  <option value="maintain healthy">Healthy Maintenance</option>
-                </select>
+                <label className="input-label">Primary goal</label>
+                <div className="choices-grid cols-3">
+                  <div className={`choice-chip ${onboardGoal === 'weight loss' ? 'selected' : ''}`} onClick={() => setOnboardGoal('weight loss')} role="button" tabIndex={0}>
+                    <span className="choice-title">Lose weight</span>
+                    <span className="choice-desc">Calorie deficit focus</span>
+                  </div>
+                  <div className={`choice-chip ${onboardGoal === 'weight gain' ? 'selected' : ''}`} onClick={() => setOnboardGoal('weight gain')} role="button" tabIndex={0}>
+                    <span className="choice-title">Build muscle</span>
+                    <span className="choice-desc">Surplus + strength</span>
+                  </div>
+                  <div className={`choice-chip ${onboardGoal === 'maintain healthy' ? 'selected' : ''}`} onClick={() => setOnboardGoal('maintain healthy')} role="button" tabIndex={0}>
+                    <span className="choice-title">Maintain</span>
+                    <span className="choice-desc">Balanced habits</span>
+                  </div>
+                </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Allergies (comma-separated)</label>
-                <input className="input-field" type="text" placeholder="e.g. peanuts, dairy, gluten or None" value={onboardAllergies} onChange={(e) => setOnboardAllergies(e.target.value)} />
+                <label className="input-label">Allergies</label>
+                <input className="input-field" type="text" placeholder="Peanuts, dairy, gluten — or leave blank" value={onboardAllergies} onChange={(e) => setOnboardAllergies(e.target.value)} />
+                <span className="input-hint">Used by the safety critic when generating plans</span>
               </div>
               <div className="input-group">
-                <label className="input-label">Weekly Budget Limit</label>
-                <select className="input-field input-select" value={onboardBudget} onChange={(e) => setOnboardBudget(e.target.value)}>
-                  <option value="Low">Low Cost (Affordable)</option>
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium / Organic</option>
-                </select>
+                <label className="input-label">Food budget</label>
+                <div className="choices-grid cols-3">
+                  <div className={`choice-chip compact ${onboardBudget === 'Low' ? 'selected' : ''}`} onClick={() => setOnboardBudget('Low')} role="button" tabIndex={0}>
+                    <span className="choice-title">Budget</span>
+                    <span className="choice-desc">Affordable staples</span>
+                  </div>
+                  <div className={`choice-chip compact ${onboardBudget === 'Standard' ? 'selected' : ''}`} onClick={() => setOnboardBudget('Standard')} role="button" tabIndex={0}>
+                    <span className="choice-title">Standard</span>
+                    <span className="choice-desc">Everyday variety</span>
+                  </div>
+                  <div className={`choice-chip compact ${onboardBudget === 'Premium' ? 'selected' : ''}`} onClick={() => setOnboardBudget('Premium')} role="button" tabIndex={0}>
+                    <span className="choice-title">Premium</span>
+                    <span className="choice-desc">Organic / specialty</span>
+                  </div>
+                </div>
               </div>
-              {errorMsg && <p style={{ color: 'red', fontSize: '13px' }}>{errorMsg}</p>}
-              <button className="btn" type="submit" style={{ marginTop: '8px' }} disabled={onboardLoading}>
-                {onboardLoading ? <span className="spinner" style={{ marginRight: '8px' }} /> : <UserCheck size={18} style={{ marginRight: '8px' }} />}
-                Complete Onboarding
+              {errorMsg && <p className="form-error">{errorMsg}</p>}
+              <button className="btn btn-block" type="submit" disabled={onboardLoading}>
+                {onboardLoading ? <span className="spinner" /> : <UserCheck size={18} />}
+                Finish setup
               </button>
             </form>
           </div>
@@ -1042,35 +1108,39 @@ export default function App() {
 
         {screen === 'dashboard' && (
           <div className="screen-content has-nav dashboard-screen animate-slide-up">
-            <div className="card calorie-card" style={{ textAlign: 'center', position: 'relative' }}>
-              <h3 style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Calorie Balance</h3>
-              <div className="circular-progress-container">
-                <svg className="circular-progress" viewBox="0 0 160 160">
-                  <defs>
-                    <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#10b981" />
-                      <stop offset="100%" stopColor="#059669" />
-                    </linearGradient>
-                  </defs>
-                  <circle className="circle-bg" cx="80" cy="80" r="70" />
-                  <circle className="circle-fg" cx="80" cy="80" r="70" strokeDasharray={strokeDash} strokeDashoffset={strokeOffset} />
-                </svg>
-                <div className="circle-text-center">
-                  <span className="circle-val">{Math.round(todayCaloriesIn)}</span>
-                  <span className="circle-unit">of {calorieTarget} kcal</span>
-                </div>
+            <div className="greeting-block">
+              <span className="greeting-hi">Welcome back</span>
+              <h2>{user?.name ? user.name.split(' ')[0] : 'there'}</h2>
+            </div>
+
+            <div className="card calorie-card">
+              <div className="calorie-head">
+                <p className="card-title-muted">Today’s calories</p>
+                <p className="calorie-count">
+                  <span className="calorie-num">{Math.round(todayCaloriesIn)}</span>
+                  <span className="calorie-target">/ {calorieTarget} kcal</span>
+                </p>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', borderTop: '1px solid var(--panel-border)', paddingTop: '16px' }}>
-                <div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '11px' }}>ACTIVE BURNED</p>
-                  <p style={{ fontWeight: 700, color: 'var(--color-cyan)', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+              <div
+                className="calorie-bar"
+                role="progressbar"
+                aria-valuenow={progressPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div className="calorie-bar-fill" style={{ width: `${progressPct}%` }} />
+              </div>
+              <div className="stat-split">
+                <div className="stat-split-item">
+                  <p className="stat-label">Burned</p>
+                  <p className="stat-value" style={{ color: 'var(--color-cyan)' }}>
                     <Flame size={14} /> {Math.round(todayCaloriesOut)} kcal
                   </p>
                 </div>
-                <div style={{ width: '1px', background: 'var(--panel-border)' }} />
-                <div>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '11px' }}>BUDGET STYLE</p>
-                  <p style={{ fontWeight: 700, color: 'var(--color-purple)', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                <div className="stat-divider" />
+                <div className="stat-split-item">
+                  <p className="stat-label">Budget</p>
+                  <p className="stat-value" style={{ color: 'var(--accent)' }}>
                     <IndianRupee size={14} /> {user?.budget || 'Standard'}
                   </p>
                 </div>
@@ -1078,102 +1148,71 @@ export default function App() {
             </div>
 
             <div className="logs-grid dashboard-logs-grid">
-              <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--color-cyan)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Droplet size={20} /><span style={{ fontWeight: 700, fontSize: '15px' }}>Hydration</span>
+              <div className="card metric-card">
+                <div className="metric-card-head" style={{ color: 'var(--color-cyan)' }}>
+                  <div className="metric-card-label">
+                    <Droplet size={18} /><span>Hydration</span>
                   </div>
                   {todayWater > 0 && (
-                    <button onClick={handleResetWater} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }} title="Reset today's water">
-                      <X size={16} style={{ color: 'var(--color-orange)' }} />
+                    <button className="btn-ghost" onClick={handleResetWater} title="Reset today's water">
+                      <X size={16} />
                     </button>
                   )}
                 </div>
-                <div style={{ fontSize: '22px', fontWeight: 800 }}>{todayWater} <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>ml</span></div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '12px', flex: 1 }} onClick={() => handleAddWater(250)}>+250</button>
-                  <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '12px', flex: 1 }} onClick={() => handleAddWater(500)}>+500</button>
+                <div className="metric-value">{todayWater}<span>ml</span></div>
+                <div className="metric-actions">
+                  <button className="btn btn-sm" onClick={() => handleAddWater(250)}>+250</button>
+                  <button className="btn btn-sm" onClick={() => handleAddWater(500)}>+500</button>
                 </div>
               </div>
-              <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--color-emerald)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Footprints size={20} /><span style={{ fontWeight: 700, fontSize: '15px' }}>Steps</span>
+              <div className="card metric-card">
+                <div className="metric-card-head" style={{ color: 'var(--color-emerald)' }}>
+                  <div className="metric-card-label">
+                    <Footprints size={18} /><span>Steps</span>
                   </div>
                   {todaySteps > 0 && (
-                    <button onClick={handleResetSteps} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }} title="Reset today's steps">
-                      <X size={16} style={{ color: 'var(--color-orange)' }} />
+                    <button className="btn-ghost" onClick={handleResetSteps} title="Reset today's steps">
+                      <X size={16} />
                     </button>
                   )}
                 </div>
-                <div style={{ fontSize: '22px', fontWeight: 800 }}>{todaySteps} <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>steps</span></div>
-                <button className="btn" style={{ padding: '6px 10px', fontSize: '12px' }} onClick={() => {
-                  const num = prompt('Enter steps walked:');
-                  if (num) handleAddSteps(parseInt(num));
-                }}>
-                  <Plus size={14} /> Add steps
-                </button>
+                <div className="metric-value">{todaySteps}<span>steps</span></div>
+                <div className="metric-actions">
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => {
+                      const num = prompt('Enter steps walked:');
+                      if (num) handleAddSteps(parseInt(num));
+                    }}
+                  >
+                    <Plus size={14} /> Add steps
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="card active-plan-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '16px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Brain size={18} style={{ color: 'var(--color-purple)' }} /> Active AI Health Plan
-                </h3>
-                {!activePlan && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', marginTop: '8px' }}>
-                    <textarea
-                      className="input-field"
-                      placeholder="Add custom plan notes (e.g. 'Focus on core strength', 'Include eggs for breakfast', 'Keto today')"
-                      value={customInstructions}
-                      onChange={(e) => setCustomInstructions(e.target.value)}
-                      rows={2}
-                      style={{ resize: 'none', fontSize: '12px', padding: '8px', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
-                    />
-                    <button className="btn btn-purple" style={{ padding: '8px 12px', fontSize: '12px', width: '100%' }} onClick={handleGeneratePlan} disabled={genLoading}>
-                      {genLoading ? <><span className="spinner" style={{ marginRight: '6px', width: '12px', height: '12px', borderWidth: '0.15em' }} />Building…</> : 'Generate Plan'}
-                    </button>
-                  </div>
-                )}
-              </div>
-              {genLoading && genStatusMsg && (
-                <p style={{ fontSize: '12px', color: 'var(--color-purple)' }}>{genStatusMsg}</p>
-              )}
-              {activePlan ? (
-                <div>
-                  <p style={{ fontWeight: 600, color: 'var(--color-purple)', fontSize: '14px', marginBottom: '4px' }}>{activePlan.name}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Workout Target: {activePlan.workout_plan?.focus_area}</p>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '12px', width: '100%' }} onClick={() => setScreen('plans')}>
-                      View Plan Detail
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  Generate a multi-agent meal + workout plan tailored to your goals.
-                </p>
-              )}
-            </div>
           </div>
         )}
 
         {screen === 'logs' && (
           <div className="screen-content has-nav logs-screen animate-slide-up">
-            <h2>Log Activity</h2>
+            <div className="screen-header">
+              <h2>Log activity</h2>
+              <p className="screen-subtitle">Search the catalog, scan a meal, or log a workout.</p>
+            </div>
 
             {/* Food log form */}
             <form className="card food-log-card" onSubmit={handleLogFood}>
-              <h3 style={{ fontSize: '15px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px', marginBottom: '16px' }}>Log Nutrition</h3>
+              <div className="card-header">
+                <h3 className="card-title">Nutrition</h3>
+              </div>
 
               <div className="input-group">
                 <label className="input-label">Search foods & drinks</label>
-                <div style={{ position: 'relative' }}>
-                  <Search size={16} style={{ position: 'absolute', left: 12, top: 14, color: 'var(--text-muted)' }} />
+                <div className="input-with-icon">
+                  <Search size={16} className="input-icon" />
                   <input
                     className="input-field"
-                    style={{ paddingLeft: '36px' }}
                     type="search"
                     placeholder="Chapati, coffee, protein shake…"
                     value={foodSearch}
@@ -1182,13 +1221,12 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="category-chips" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <div className="category-chips">
                 {CATEGORIES.map((c) => (
                   <button
                     key={c.id || 'all'}
                     type="button"
                     className={`choice-chip ${foodCategory === c.id ? 'selected' : ''}`}
-                    style={{ fontSize: '12px', padding: '6px 10px' }}
                     onClick={() => setFoodCategory(c.id)}
                   >
                     {c.label}
@@ -1196,10 +1234,10 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="food-catalog-list" style={{ maxHeight: '160px', overflowY: 'auto', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {catalogLoading && <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Loading…</p>}
+              <div className="food-catalog-list">
+                {catalogLoading && <p className="empty-hint">Loading…</p>}
                 {!catalogLoading && catalogFoods.length === 0 && (
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No matches. Add a custom food/drink below.</p>
+                  <p className="empty-hint">No matches. Add a custom food below.</p>
                 )}
                 {catalogFoods.map((f) => (
                   <button
@@ -1207,18 +1245,9 @@ export default function App() {
                     type="button"
                     onClick={() => handleSelectFood(f)}
                     className={`food-pick-item ${selectedFood?.id === f.id ? 'selected' : ''}`}
-                    style={{
-                      textAlign: 'left',
-                      padding: '10px 12px',
-                      borderRadius: '10px',
-                      border: selectedFood?.id === f.id ? '1px solid var(--color-emerald)' : '1px solid var(--panel-border)',
-                      background: selectedFood?.id === f.id ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.02)',
-                      color: 'inherit',
-                      cursor: 'pointer',
-                    }}
                   >
-                    <div style={{ fontWeight: 600, fontSize: '13px' }}>{f.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <div className="food-pick-name">{f.name}</div>
+                    <div className="food-pick-meta">
                       {f.category}{f.is_drink ? ' · drink' : ''} · {Math.round(f.calories)} kcal / {f.reference_amount}{f.reference_unit}
                     </div>
                   </button>
@@ -1226,12 +1255,12 @@ export default function App() {
               </div>
 
               {selectedFood && (
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div className="input-group" style={{ flex: 1 }}>
+                <div className="form-row">
+                  <div className="input-group">
                     <label className="input-label">Quantity</label>
                     <input className="input-field" type="number" min="0.1" step="any" value={logFoodQty} onChange={(e) => setLogFoodQty(e.target.value)} />
                   </div>
-                  <div className="input-group" style={{ flex: 1 }}>
+                  <div className="input-group">
                     <label className="input-label">Unit</label>
                     <select className="input-field input-select" value={logFoodUnit} onChange={(e) => handleUnitChange(e.target.value)}>
                       {unitsForFood(selectedFood).map((u) => (
@@ -1242,22 +1271,22 @@ export default function App() {
                 </div>
               )}
 
-              <button className="btn" type="submit" style={{ width: '100%' }} disabled={foodLogLoading || !selectedFood}>
-                {foodLogLoading ? <span className="spinner" style={{ marginRight: '8px' }} /> : null}
-                Add Food Log
+              <button className="btn btn-block" type="submit" disabled={foodLogLoading || !selectedFood}>
+                {foodLogLoading ? <span className="spinner" /> : null}
+                Add food log
               </button>
 
               <button
                 type="button"
-                className="btn btn-secondary"
-                style={{ width: '100%', marginTop: '8px' }}
+                className="btn btn-secondary btn-block"
+                style={{ marginTop: 8 }}
                 onClick={() => setShowCustomFood((v) => !v)}
               >
                 {showCustomFood ? 'Hide custom form' : 'Add custom food / drink'}
               </button>
 
               {showCustomFood && (
-                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
+                <div className="form-stack" style={{ marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
                   <input className="input-field" placeholder="Name (e.g. Mango Lassi)" value={customFood.name} onChange={(e) => setCustomFood({ ...customFood, name: e.target.value })} required />
                   <select className="input-field input-select" value={customFood.category} onChange={(e) => {
                     const cat = e.target.value;
@@ -1275,41 +1304,43 @@ export default function App() {
                     <option value="supplement">Supplement</option>
                     <option value="other">Other</option>
                   </select>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', paddingLeft: '4px' }}>Calories (kcal)</label>
-                      <input className="input-field" type="number" placeholder="Calories" value={customFood.calories} onChange={(e) => setCustomFood({ ...customFood, calories: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
+                  <div className="form-grid-2">
+                    <div className="input-group">
+                      <label className="input-label">Calories</label>
+                      <input className="input-field" type="number" value={customFood.calories} onChange={(e) => setCustomFood({ ...customFood, calories: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', paddingLeft: '4px' }}>Protein (g)</label>
-                      <input className="input-field" type="number" placeholder="Protein g" value={customFood.protein} onChange={(e) => setCustomFood({ ...customFood, protein: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
+                    <div className="input-group">
+                      <label className="input-label">Protein (g)</label>
+                      <input className="input-field" type="number" value={customFood.protein} onChange={(e) => setCustomFood({ ...customFood, protein: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', paddingLeft: '4px' }}>Carbs (g)</label>
-                      <input className="input-field" type="number" placeholder="Carbs g" value={customFood.carbs} onChange={(e) => setCustomFood({ ...customFood, carbs: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
+                    <div className="input-group">
+                      <label className="input-label">Carbs (g)</label>
+                      <input className="input-field" type="number" value={customFood.carbs} onChange={(e) => setCustomFood({ ...customFood, carbs: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', paddingLeft: '4px' }}>Fats (g)</label>
-                      <input className="input-field" type="number" placeholder="Fats g" value={customFood.fats} onChange={(e) => setCustomFood({ ...customFood, fats: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
+                    <div className="input-group">
+                      <label className="input-label">Fats (g)</label>
+                      <input className="input-field" type="number" value={customFood.fats} onChange={(e) => setCustomFood({ ...customFood, fats: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })} />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', paddingLeft: '4px' }}>Serving Size</label>
-                      <input className="input-field" type="number" placeholder="Ref amount" value={customFood.reference_amount} onChange={(e) => setCustomFood({ ...customFood, reference_amount: e.target.value === '' ? '' : parseFloat(e.target.value) || 1 })} />
+                    <div className="input-group">
+                      <label className="input-label">Serving size</label>
+                      <input className="input-field" type="number" value={customFood.reference_amount} onChange={(e) => setCustomFood({ ...customFood, reference_amount: e.target.value === '' ? '' : parseFloat(e.target.value) || 1 })} />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', paddingLeft: '4px' }}>Serving Unit</label>
-                      <input className="input-field" placeholder="Unit (g/ml)" value={customFood.reference_unit} onChange={(e) => setCustomFood({ ...customFood, reference_unit: e.target.value })} />
+                    <div className="input-group">
+                      <label className="input-label">Unit</label>
+                      <input className="input-field" placeholder="g / ml" value={customFood.reference_unit} onChange={(e) => setCustomFood({ ...customFood, reference_unit: e.target.value })} />
                     </div>
                   </div>
-                  <button type="button" className="btn" onClick={handleCreateCustomFood}>Save to catalog</button>
+                  <button type="button" className="btn btn-block" onClick={handleCreateCustomFood}>Save to catalog</button>
                 </div>
               )}
             </form>
 
             <form className="card workout-log-card" onSubmit={handleLogWorkout}>
-              <h3 style={{ fontSize: '15px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px', marginBottom: '16px' }}>Log Exercises</h3>
+              <div className="card-header">
+                <h3 className="card-title">Workout</h3>
+              </div>
               <div className="input-group">
-                <label className="input-label">Workout Type</label>
+                <label className="input-label">Exercise</label>
                 <select className="input-field input-select" value={logWorkoutId} onChange={(e) => handleWorkoutChange(e.target.value)}>
                   {availableWorkouts.map((w) => (
                     <option key={w.id} value={w.id}>{w.name} ({w.unit})</option>
@@ -1317,12 +1348,12 @@ export default function App() {
                 </select>
               </div>
               {availableWorkouts.find((w) => w.id === logWorkoutId)?.unit === 'reps' ? (
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div className="input-group" style={{ flex: 1 }}>
+                <div className="form-row">
+                  <div className="input-group">
                     <label className="input-label">Sets</label>
                     <input className="input-field" type="number" min="1" value={logWorkoutSets} onChange={(e) => setLogWorkoutSets(e.target.value === '' ? '' : parseInt(e.target.value))} />
                   </div>
-                  <div className="input-group" style={{ flex: 1 }}>
+                  <div className="input-group">
                     <label className="input-label">Reps per set</label>
                     <input className="input-field" type="number" min="1" value={logWorkoutReps} onChange={(e) => setLogWorkoutReps(e.target.value === '' ? '' : parseInt(e.target.value))} />
                   </div>
@@ -1333,19 +1364,21 @@ export default function App() {
                   <input className="input-field" type="number" min="1" value={logWorkoutMins} onChange={(e) => setLogWorkoutMins(e.target.value === '' ? '' : parseInt(e.target.value))} />
                 </div>
               )}
-              <button className="btn btn-cyan" type="submit" style={{ width: '100%' }} disabled={workoutLogLoading}>
-                {workoutLogLoading ? <span className="spinner" style={{ marginRight: '8px' }} /> : null}
-                Add Workout Log
+              <button className="btn btn-cyan btn-block" type="submit" disabled={workoutLogLoading}>
+                {workoutLogLoading ? <span className="spinner" /> : null}
+                Add workout log
               </button>
             </form>
 
             {/* Meal scan */}
             <div className="card scan-meal-card">
-              <h3 style={{ fontSize: '15px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Camera size={18} style={{ color: 'var(--color-orange)' }} /> Scan Meal Photo
-              </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                Take a photo of your plate or drink on mobile — AI identifies items so you can log the meal.
+              <div className="card-header">
+                <h3 className="card-title">
+                  <Camera size={18} style={{ color: 'var(--warning)' }} /> Scan meal
+                </h3>
+              </div>
+              <p className="empty-hint" style={{ marginBottom: 12 }}>
+                Photograph your plate — AI identifies items so you can confirm and log.
               </p>
               <input
                 ref={scanInputRef}
@@ -1357,58 +1390,56 @@ export default function App() {
               />
               <button
                 type="button"
-                className="btn btn-orange scan-meal-btn"
-                style={{ width: '100%', minHeight: '48px' }}
+                className="btn btn-orange scan-meal-btn btn-block"
                 disabled={scanLoading}
                 onClick={() => scanInputRef.current?.click()}
               >
-                {scanLoading ? <span className="spinner" style={{ marginRight: '8px' }} /> : <Camera size={18} style={{ marginRight: '8px' }} />}
-                {scanLoading ? 'Identifying…' : 'Open Camera / Gallery'}
+                {scanLoading ? <span className="spinner" /> : <Camera size={18} />}
+                {scanLoading ? 'Identifying…' : 'Open camera / gallery'}
               </button>
               {scanPreview && (
                 <img src={scanPreview} alt="Meal preview" className="scan-preview" />
               )}
               {scanResult && (
-                <div className="scan-results" style={{ marginTop: '16px' }}>
-                  <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+                <div className="scan-results" style={{ marginTop: 16 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
                     Suggested: {scanResult.meal_suggestion || 'Meal'} · ~{Math.round(scanResult.total_calories || 0)} kcal
                   </p>
                   {scanResult.notes && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>{scanResult.notes}</p>
+                    <p className="empty-hint" style={{ marginBottom: 8 }}>{scanResult.notes}</p>
                   )}
                   {scanResult.items.map((it, idx) => (
                     <div key={idx} className="scan-item-row">
-                      <div style={{ flex: 1 }}>
+                      <div>
                         <input
                           className="input-field"
-                          style={{ marginBottom: '6px', fontSize: '13px' }}
+                          style={{ marginBottom: 6, fontSize: 13 }}
                           value={it.name}
                           onChange={(e) => updateScanItem(idx, { name: e.target.value })}
                         />
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div className="scan-item-controls">
                           <input
                             className="input-field"
                             type="number"
-                            style={{ width: '80px', fontSize: '13px' }}
                             value={it.estimated_quantity}
                             onChange={(e) => updateScanItem(idx, { estimated_quantity: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
                           />
-                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{it.unit}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          <span className="scan-item-unit">{it.unit}</span>
+                          <span className="scan-item-meta">
                             {Math.round(it.confidence * 100)}% · {Math.round(it.calories)} kcal
                             {it.created ? ' · new' : ''}
                           </span>
-                          <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => removeScanItem(idx)}>
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={() => removeScanItem(idx)}>
                             <X size={14} />
                           </button>
                         </div>
                       </div>
                     </div>
                   ))}
-                  <button type="button" className="btn" style={{ width: '100%', marginTop: '12px' }} disabled={scanLoading || !scanResult.items.length} onClick={handleConfirmScan}>
-                    Log All Items
+                  <button type="button" className="btn btn-block" style={{ marginTop: 12 }} disabled={scanLoading || !scanResult.items.length} onClick={handleConfirmScan}>
+                    Log all items
                   </button>
-                  <button type="button" className="btn btn-secondary" style={{ width: '100%', marginTop: '8px' }} onClick={() => { setScanResult(null); setScanPreview(null); }}>
+                  <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={() => { setScanResult(null); setScanPreview(null); }}>
                     Discard
                   </button>
                 </div>
@@ -1416,27 +1447,29 @@ export default function App() {
             </div>
 
             <div className="card recent-logs-card">
-              <h3 style={{ fontSize: '15px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px', marginBottom: '12px' }}>Today's Logs</h3>
+              <div className="card-header">
+                <h3 className="card-title">Today’s logs</h3>
+              </div>
               {foodLogs.length === 0 && workoutLogs.length === 0 ? (
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No items logged yet. Scan a meal or search the catalog!</p>
+                <p className="empty-hint">Nothing logged yet. Scan a meal or search the catalog.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {foodLogs.length > 0 && (
                     <div>
-                      <h4 style={{ fontSize: '13px', color: 'var(--color-emerald)', marginBottom: '8px' }}>Food Logs</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <p className="log-section-label" style={{ color: 'var(--color-emerald)' }}>Food</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {foodLogs.map((log) => (
-                          <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                          <div key={log.id} className="log-row">
                             <div>
-                              <p style={{ fontWeight: 600, fontSize: '14px', margin: 0 }}>{log.food_name}</p>
-                              <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+                              <p className="log-row-title">{log.food_name}</p>
+                              <p className="log-row-meta">
                                 {log.quantity} {log.unit}{log.meal_name ? ` · ${log.meal_name}` : ''}
                               </p>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-emerald)' }}>+{Math.round(log.calories)} kcal</span>
-                              <button onClick={() => handleDeleteFoodLog(log.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }} title="Delete log">
-                                <X size={16} style={{ color: 'var(--color-orange)' }} />
+                            <div className="log-row-actions">
+                              <span className="log-row-kcal" style={{ color: 'var(--color-emerald)' }}>+{Math.round(log.calories)} kcal</span>
+                              <button className="btn-ghost" onClick={() => handleDeleteFoodLog(log.id)} title="Delete log">
+                                <X size={16} />
                               </button>
                             </div>
                           </div>
@@ -1446,20 +1479,20 @@ export default function App() {
                   )}
                   {workoutLogs.length > 0 && (
                     <div>
-                      <h4 style={{ fontSize: '13px', color: 'var(--color-cyan)', marginBottom: '8px' }}>Workout Logs</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <p className="log-section-label" style={{ color: 'var(--color-cyan)' }}>Workouts</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {workoutLogs.map((log) => (
-                          <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                          <div key={log.id} className="log-row">
                             <div>
-                              <p style={{ fontWeight: 600, fontSize: '14px', margin: 0 }}>{log.workout_name}</p>
-                              <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
-                                {log.duration_minutes ? `${log.duration_minutes} mins` : `${log.sets} sets x ${log.reps_per_set} reps`}
+                              <p className="log-row-title">{log.workout_name}</p>
+                              <p className="log-row-meta">
+                                {log.duration_minutes ? `${log.duration_minutes} mins` : `${log.sets} sets × ${log.reps_per_set} reps`}
                               </p>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-cyan)' }}>-{Math.round(log.estimated_calories)} kcal</span>
-                              <button onClick={() => handleDeleteWorkoutLog(log.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }} title="Delete log">
-                                <X size={16} style={{ color: 'var(--color-orange)' }} />
+                            <div className="log-row-actions">
+                              <span className="log-row-kcal" style={{ color: 'var(--color-cyan)' }}>−{Math.round(log.estimated_calories)} kcal</span>
+                              <button className="btn-ghost" onClick={() => handleDeleteWorkoutLog(log.id)} title="Delete log">
+                                <X size={16} />
                               </button>
                             </div>
                           </div>
@@ -1475,117 +1508,123 @@ export default function App() {
 
         {screen === 'plans' && (
           <div className="screen-content has-nav plans-screen animate-slide-up">
-            <h2>Health Plan</h2>
+            <div className="screen-header">
+              <h2>Health plan</h2>
+              <p className="screen-subtitle">Meals and workouts reviewed by the safety critic.</p>
+            </div>
             {activePlan ? (
               <>
                 <div className="plans-layout-grid">
-                <div className="plans-col-left" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div className="card">
-                    <h3 style={{ color: 'var(--color-purple)', fontSize: '18px', margin: 0 }}>{activePlan.name}</h3>
-                  </div>
-                  {activePlan.avoidance_list && activePlan.avoidance_list.length > 0 && (
-                    <div className="card" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.05)' }}>
-                      <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontSize: '14px', margin: '0 0 8px 0' }}>
-                        <AlertTriangle size={16} /> SAFETY RESTRICTIONS
-                      </h4>
-                      <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px' }}>
-                        {activePlan.avoidance_list.map((item, idx) => <li key={idx}>{item}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {activePlan.budget_tips && activePlan.budget_tips.length > 0 && (
+                  <div className="plans-col-left" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                     <div className="card">
-                      <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-purple)', fontSize: '14px', margin: '0 0 8px 0' }}>
-                        <TrendingUp size={16} /> SUSTAINABLE BUDGET TIPS
-                      </h4>
-                      <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                        {activePlan.budget_tips.map((tip, idx) => <li key={idx}>{tip}</li>)}
-                      </ul>
+                      <h3 style={{ color: 'var(--accent)', fontSize: '1.1rem', margin: 0 }}>{activePlan.name}</h3>
                     </div>
-                  )}
-                  <div className="card">
-                    <h4 style={{ fontSize: '15px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px', color: 'var(--color-cyan)' }}>WORKOUT PLAN</h4>
-                    <div style={{ textAlign: 'left', marginTop: '12px' }}>
-                      <p style={{ fontWeight: 700, fontSize: '14px' }}>Focus: {activePlan.workout_plan?.focus_area}</p>
-                      <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    {activePlan.avoidance_list && activePlan.avoidance_list.length > 0 && (
+                      <div className="card safety-card">
+                        <h4 className="plan-section-title" style={{ color: 'var(--danger)', borderColor: 'rgba(239,107,107,0.2)' }}>
+                          <AlertTriangle size={15} /> Safety restrictions
+                        </h4>
+                        <ul className="plan-list">
+                          {activePlan.avoidance_list.map((item, idx) => <li key={idx}>{item}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {activePlan.budget_tips && activePlan.budget_tips.length > 0 && (
+                      <div className="card">
+                        <h4 className="plan-section-title" style={{ color: 'var(--accent)' }}>
+                          <TrendingUp size={15} /> Budget tips
+                        </h4>
+                        <ul className="plan-list">
+                          {activePlan.budget_tips.map((tip, idx) => <li key={idx}>{tip}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    <div className="card">
+                      <h4 className="plan-section-title" style={{ color: 'var(--color-cyan)' }}>Workout</h4>
+                      <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 8px' }}>Focus: {activePlan.workout_plan?.focus_area}</p>
+                      <ul className="plan-list">
                         {activePlan.workout_plan?.exercises?.map((ex, idx) => (
-                          <li key={idx}>{ex.name}: {ex.sets} sets x {ex.reps}</li>
+                          <li key={idx}>{ex.name}: {ex.sets} sets × {ex.reps}</li>
                         ))}
                       </ul>
                     </div>
                   </div>
-                </div>
-                <div className="plans-col-right" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div className="card">
-                    <h4 style={{ fontSize: '15px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px', color: 'var(--color-emerald)' }}>MEAL PLAN</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
-                      {activePlan.days && activePlan.days.length > 0 ? (
-                        activePlan.days[0].meals.map((meal, idx) => (
-                          <div key={idx} style={{ textAlign: 'left' }}>
-                            <p style={{ fontWeight: 700, fontSize: '14px' }}>{meal.meal}</p>
-                            <ul style={{ paddingLeft: '20px', margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                              {meal.items.map((it, i) => (
-                                <li key={i}>{it.food_name}: {it.quantity} {it.unit}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))
-                      ) : (
-                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No meals generated.</p>
-                      )}
+                  <div className="plans-col-right" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                    <div className="card">
+                      <h4 className="plan-section-title" style={{ color: 'var(--color-emerald)' }}>Meals</h4>
+                      <div>
+                        {activePlan.days && activePlan.days.length > 0 ? (
+                          activePlan.days[0].meals.map((meal, idx) => (
+                            <div key={idx} className="meal-block">
+                              <p className="meal-block-title">{meal.meal}</p>
+                              <ul className="plan-list">
+                                {meal.items.map((it, i) => (
+                                  <li key={i}>{it.food_name}: {it.quantity} {it.unit}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="empty-hint">No meals generated.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="card" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
-                <h4 style={{ fontSize: '14px', color: 'var(--color-purple)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Brain size={16} /> Regenerate Health Plan with Custom Instructions
-                </h4>
-                <textarea
-                  className="input-field"
-                  placeholder="Optional: Tell the AI what to change (e.g. 'Focus on abs', 'Make it low carb', 'Add eggs for breakfast')"
-                  value={customInstructions}
-                  onChange={(e) => setCustomInstructions(e.target.value)}
-                  rows={2}
-                  style={{ resize: 'none', fontSize: '12px', padding: '8px', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
-                />
-                <button className="btn btn-purple" onClick={handleGeneratePlan} disabled={genLoading} style={{ padding: '12px', width: '100%', fontSize: '13px', fontWeight: 'bold' }}>
-                  {genLoading ? <><span className="spinner" style={{ marginRight: '6px', width: '12px', height: '12px', borderWidth: '0.15em' }} />Regenerating…</> : 'Regenerate Plan'}
+                <div className="card plan-gen-box" style={{ marginTop: 4 }}>
+                  <h4 className="card-title" style={{ margin: 0 }}>
+                    <Brain size={16} style={{ color: 'var(--accent)' }} /> Regenerate with notes
+                  </h4>
+                  <textarea
+                    className="input-field"
+                    placeholder="What should change? e.g. more abs, low carb"
+                    value={customInstructions}
+                    onChange={(e) => setCustomInstructions(e.target.value)}
+                    rows={1}
+                  />
+                  <button className="btn btn-accent" onClick={handleGeneratePlan} disabled={genLoading}>
+                    {genLoading ? <><span className="spinner" /> Regenerating…</> : 'Regenerate plan'}
+                  </button>
+                  {genLoading && genStatusMsg && (
+                    <p className="status-msg">{genStatusMsg}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="card empty-state-card">
+                <div className="empty-state-icon">
+                  <Compass size={22} />
+                </div>
+                <div className="empty-state-text">
+                  <p className="empty-state-title">No plan yet</p>
+                  <p className="empty-state-desc">Get a daily meal + workout plan built for your goals.</p>
+                </div>
+                <button className="btn btn-accent" onClick={handleGeneratePlan} disabled={genLoading}>
+                  {genLoading ? <><span className="spinner" /> Building…</> : 'Generate plan'}
                 </button>
-                {genLoading && genStatusMsg && (
-                  <p style={{ fontSize: '12px', color: 'var(--color-purple)', textAlign: 'center', margin: 0 }}>{genStatusMsg}</p>
-                )}
-              </div>
-            </>
-          ) : (
-              <div className="card" style={{ padding: '40px 20px', textAlign: 'center' }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>No active plan yet.</p>
-                {genStatusMsg && <p style={{ fontSize: '12px', color: 'var(--color-purple)', marginBottom: '12px' }}>{genStatusMsg}</p>}
-                <button className="btn btn-purple" style={{ margin: '0 auto' }} onClick={handleGeneratePlan} disabled={genLoading}>
-                  {genLoading ? <><span className="spinner" style={{ marginRight: '8px' }} />Building…</> : 'Generate New Plan'}
-                </button>
+                {genStatusMsg && <p className="status-msg">{genStatusMsg}</p>}
               </div>
             )}
           </div>
         )}
 
         {screen === 'profile' && (
-          <div className="screen-content onboarding-screen animate-slide-up" style={{ paddingBottom: '80px' }}>
-            <div>
-              <h2>Edit Profile</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Update your personal profile, goals, and nutrition filters</p>
+          <div className="screen-content onboarding-screen animate-slide-up" style={{ paddingBottom: 80 }}>
+            <div className="screen-header">
+              <h2>Profile</h2>
+              <p className="screen-subtitle">Update goals, diet filters, and personal details.</p>
             </div>
-            <form className="card" onSubmit={handleProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '600px', margin: '20px auto' }}>
+            <form className="card form-stack" onSubmit={handleProfileSubmit} style={{ maxWidth: 600, margin: '8px auto', width: '100%' }}>
               <div className="input-group">
-                <label className="input-label">Full Name</label>
+                <label className="input-label">Full name</label>
                 <input className="input-field" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} required />
               </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div className="input-group" style={{ flex: 1 }}>
+              <div className="form-row">
+                <div className="input-group">
                   <label className="input-label">Age</label>
                   <input className="input-field" type="number" min="1" max="120" value={profileAge} onChange={(e) => setProfileAge(e.target.value === '' ? '' : parseInt(e.target.value))} />
                 </div>
-                <div className="input-group" style={{ flex: 1 }}>
+                <div className="input-group">
                   <label className="input-label">Gender</label>
                   <select className="input-field input-select" value={profileGender} onChange={(e) => setProfileGender(e.target.value)}>
                     <option value="male">Male</option>
@@ -1594,56 +1633,83 @@ export default function App() {
                   </select>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div className="input-group" style={{ flex: 1 }}>
+              <div className="form-row">
+                <div className="input-group">
                   <label className="input-label">Height (cm)</label>
                   <input className="input-field" type="number" value={profileHeight} onChange={(e) => setProfileHeight(e.target.value === '' ? '' : parseFloat(e.target.value))} />
                 </div>
-                <div className="input-group" style={{ flex: 1 }}>
+                <div className="input-group">
                   <label className="input-label">Weight (kg)</label>
                   <input className="input-field" type="number" value={profileWeight} onChange={(e) => setProfileWeight(e.target.value === '' ? '' : parseFloat(e.target.value))} />
                 </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Target Weight (kg)</label>
+                <label className="input-label">Target weight (kg)</label>
                 <input className="input-field" type="number" value={profileTargetWeight} onChange={(e) => setProfileTargetWeight(e.target.value === '' ? '' : parseFloat(e.target.value))} />
               </div>
               <div className="input-group">
-                <label className="input-label">Dietary Preference</label>
-                <div className="choices-grid">
-                  <div className={`choice-chip ${profileDiet.includes('veg') ? 'selected' : ''}`} onClick={() => setProfileDiet(['veg'])}>Vegetarian</div>
-                  <div className={`choice-chip ${profileDiet.includes('vegan') ? 'selected' : ''}`} onClick={() => setProfileDiet(['vegan'])}>Vegan</div>
-                  <div className={`choice-chip ${profileDiet.includes('non-veg') ? 'selected' : ''}`} onClick={() => setProfileDiet(['non-veg'])}>Non-Vegetarian</div>
+                <label className="input-label">Diet</label>
+                <div className="choices-grid cols-3">
+                  <div className={`choice-chip compact ${profileDiet.includes('veg') ? 'selected' : ''}`} onClick={() => setProfileDiet(['veg'])}>
+                    <span className="choice-title">Vegetarian</span>
+                    <span className="choice-desc">Plant + dairy/eggs</span>
+                  </div>
+                  <div className={`choice-chip compact ${profileDiet.includes('vegan') ? 'selected' : ''}`} onClick={() => setProfileDiet(['vegan'])}>
+                    <span className="choice-title">Vegan</span>
+                    <span className="choice-desc">Fully plant-based</span>
+                  </div>
+                  <div className={`choice-chip compact ${profileDiet.includes('non-veg') ? 'selected' : ''}`} onClick={() => setProfileDiet(['non-veg'])}>
+                    <span className="choice-title">Non-veg</span>
+                    <span className="choice-desc">Meat & fish OK</span>
+                  </div>
                 </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Active Fitness Goal</label>
-                <select className="input-field input-select" value={profileGoal} onChange={(e) => setProfileGoal(e.target.value)}>
-                  <option value="weight loss">Weight Loss (Deficit)</option>
-                  <option value="weight gain">Muscle Gain (Surplus)</option>
-                  <option value="maintain healthy">Healthy Maintenance</option>
-                </select>
+                <label className="input-label">Fitness goal</label>
+                <div className="choices-grid cols-3">
+                  <div className={`choice-chip ${profileGoal === 'weight loss' ? 'selected' : ''}`} onClick={() => setProfileGoal('weight loss')}>
+                    <span className="choice-title">Lose weight</span>
+                    <span className="choice-desc">Deficit focus</span>
+                  </div>
+                  <div className={`choice-chip ${profileGoal === 'weight gain' ? 'selected' : ''}`} onClick={() => setProfileGoal('weight gain')}>
+                    <span className="choice-title">Build muscle</span>
+                    <span className="choice-desc">Surplus + strength</span>
+                  </div>
+                  <div className={`choice-chip ${profileGoal === 'maintain healthy' ? 'selected' : ''}`} onClick={() => setProfileGoal('maintain healthy')}>
+                    <span className="choice-title">Maintain</span>
+                    <span className="choice-desc">Balanced habits</span>
+                  </div>
+                </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Allergies (comma-separated)</label>
-                <input className="input-field" type="text" placeholder="e.g. peanuts, dairy, gluten or None" value={profileAllergies} onChange={(e) => setProfileAllergies(e.target.value)} />
+                <label className="input-label">Allergies</label>
+                <input className="input-field" type="text" placeholder="Peanuts, dairy, gluten — or None" value={profileAllergies} onChange={(e) => setProfileAllergies(e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Weekly Budget Limit</label>
-                <select className="input-field input-select" value={profileBudget} onChange={(e) => setProfileBudget(e.target.value)}>
-                  <option value="Low">Low Cost (Affordable)</option>
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium / Organic</option>
-                </select>
+                <label className="input-label">Food budget</label>
+                <div className="choices-grid cols-3">
+                  <div className={`choice-chip compact ${profileBudget === 'Low' ? 'selected' : ''}`} onClick={() => setProfileBudget('Low')}>
+                    <span className="choice-title">Budget</span>
+                    <span className="choice-desc">Affordable staples</span>
+                  </div>
+                  <div className={`choice-chip compact ${profileBudget === 'Standard' ? 'selected' : ''}`} onClick={() => setProfileBudget('Standard')}>
+                    <span className="choice-title">Standard</span>
+                    <span className="choice-desc">Everyday variety</span>
+                  </div>
+                  <div className={`choice-chip compact ${profileBudget === 'Premium' ? 'selected' : ''}`} onClick={() => setProfileBudget('Premium')}>
+                    <span className="choice-title">Premium</span>
+                    <span className="choice-desc">Organic / specialty</span>
+                  </div>
+                </div>
               </div>
-              
-              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+
+              <div className="form-row" style={{ marginTop: 8 }}>
                 <button className="btn btn-secondary" type="button" style={{ flex: 1 }} onClick={() => setScreen('dashboard')}>
                   Cancel
                 </button>
                 <button className="btn btn-emerald" type="submit" style={{ flex: 1 }} disabled={profileLoading}>
-                  {profileLoading ? <span className="spinner" style={{ marginRight: '8px' }} /> : <UserCheck size={18} style={{ marginRight: '8px' }} />}
-                  Save Changes
+                  {profileLoading ? <span className="spinner" /> : <UserCheck size={18} />}
+                  Save changes
                 </button>
               </div>
             </form>
@@ -1651,113 +1717,52 @@ export default function App() {
         )}
 
         {screen === 'chat' && (
-          <div className="chat-window" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            {/* Top Action Header Bar with circular buttons */}
-            <div className="chat-header-actions" style={{ 
-              display: 'flex', 
-              gap: '12px', 
-              justifyContent: 'flex-end', 
-              padding: '12px 20px', 
-              borderBottom: '1px solid var(--panel-border)', 
-              background: 'rgba(17, 24, 39, 0.4)',
-              alignItems: 'center'
-            }}>
-              <button 
-                type="button" 
-                className="chat-action-circle" 
-                onClick={handleCreateNewSession} 
-                title="New Chat" 
-                style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  borderRadius: '50%', 
-                  border: '1px solid var(--panel-border)', 
-                  background: 'rgba(255, 255, 255, 0.05)', 
-                  color: 'var(--text-primary)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  cursor: 'pointer', 
-                  transition: 'all 0.2s'
-                }}
+          <div className="chat-window">
+            <div className="chat-header-actions">
+              <button
+                type="button"
+                className="chat-action-circle"
+                onClick={handleCreateNewSession}
+                title="New Chat"
               >
                 <Plus size={18} />
               </button>
-              
-              <button 
-                type="button" 
+              <button
+                type="button"
                 id="past-chats-toggle-btn"
-                className="chat-action-circle" 
-                onClick={() => setShowHistoryOverlay(!showHistoryOverlay)} 
-                title="Past Conversations" 
-                style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  borderRadius: '50%', 
-                  border: '1px solid var(--panel-border)', 
-                  background: showHistoryOverlay ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)', 
-                  color: showHistoryOverlay ? 'var(--color-purple)' : 'var(--text-primary)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  cursor: 'pointer', 
-                  transition: 'all 0.2s'
-                }}
+                className={`chat-action-circle ${showHistoryOverlay ? 'active' : ''}`}
+                onClick={() => setShowHistoryOverlay(!showHistoryOverlay)}
+                title="Past Conversations"
               >
                 <History size={18} />
               </button>
             </div>
 
-            {/* Past Conversations overlay dropdown */}
             {showHistoryOverlay && (
-              <div className="chat-history-overlay" ref={historyOverlayRef} style={{
-                position: 'absolute',
-                top: '64px',
-                right: '20px',
-                width: '300px',
-                maxHeight: '360px',
-                background: 'var(--panel-color)',
-                border: '1px solid var(--panel-border)',
-                borderRadius: '16px',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5)',
-                zIndex: 100,
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '16px',
-                overflow: 'hidden'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--panel-border)' }}>
-                  <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>Chat History</span>
-                  <button type="button" onClick={() => setShowHistoryOverlay(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
+              <div className="chat-history-overlay" ref={historyOverlayRef}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--panel-border)' }}>
+                  <span style={{ fontWeight: 650, fontSize: 14 }}>Chat history</span>
+                  <button type="button" className="btn-ghost" onClick={() => setShowHistoryOverlay(false)}>
                     <X size={16} />
                   </button>
                 </div>
-                <div className="history-scroll-list" style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                <div className="history-scroll-list">
                   {chatSessions.length === 0 ? (
-                    <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No past chats found</div>
+                    <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No past chats</div>
                   ) : (
                     chatSessions.map((s) => (
-                      <div 
+                      <div
                         key={s.id}
+                        className={`history-item ${activeSessionId === s.id ? 'active' : ''}`}
                         onClick={() => { handleSelectSession(s.id); setShowHistoryOverlay(false); }}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '10px 12px',
-                          borderRadius: '10px',
-                          cursor: 'pointer',
-                          background: activeSessionId === s.id ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                          border: activeSessionId === s.id ? '1px solid var(--color-purple)' : '1px solid var(--panel-border)',
-                          fontSize: '13px',
-                          transition: 'all 0.2s'
-                        }}
                       >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px', color: activeSessionId === s.id ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: activeSessionId === s.id ? 600 : 400 }}>{s.title}</span>
-                        <button 
+                        <span className="history-item-title">
+                          {s.title}
+                        </span>
+                        <button
                           type="button"
+                          className="btn-ghost"
                           onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }}
-                          style={{ background: 'none', border: 'none', color: 'var(--color-orange)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
                           title="Delete Chat"
                         >
                           <Trash2 size={14} />
@@ -1769,51 +1774,44 @@ export default function App() {
               </div>
             )}
 
-            {/* Chat message bubbles scroll container */}
-            <div className="chat-messages" style={{ flex: 1, overflowY: 'auto', padding: '24px 16px 16px' }}>
+            <div className="chat-messages">
               {chatMessages.length === 0 ? (
-                <div className="chat-bubble ai" style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '16px' }}>
-                  <div style={{ wordBreak: 'break-word' }}>
-                    {renderMarkdown('Hi! I am your SmartSprout Wellness Coach. Log water, steps, any food or drink or send a meal photo and I will identify it.')}
+                <div className="chat-bubble ai">
+                  <div className="chat-bubble-content">
+                    {renderMarkdown('Hi! I am your SmartSprout Wellness Coach. Log water, steps, any food or drink — or send a meal photo and I will identify it.')}
                   </div>
                 </div>
               ) : (
                 chatMessages.map((msg, idx) => (
-                  <div key={idx} className={`chat-bubble ${msg.role === 'user' ? 'user' : 'ai'}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div key={idx} className={`chat-bubble ${msg.role === 'user' ? 'user' : 'ai'}`}>
                     {(msg.image_preview || msg.imagePreview) && (
-                      <img 
-                        src={msg.image_preview || msg.imagePreview} 
-                        alt="Attached meal" 
-                        style={{ 
-                          maxWidth: '220px', 
-                          maxHeight: '220px', 
-                          borderRadius: '8px', 
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          display: 'block' 
-                        }} 
+                      <img
+                        src={msg.image_preview || msg.imagePreview}
+                        alt="Attached meal"
+                        className="chat-bubble-img"
                       />
                     )}
-                    <div style={{ wordBreak: 'break-word' }}>
+                    <div className="chat-bubble-content">
                       {renderMarkdown(msg.content)}
                     </div>
                   </div>
                 ))
               )}
               {chatLoading && (
-                <div className="chat-bubble ai" style={{ opacity: 0.5 }}>Thinking…</div>
+                <div className="chat-bubble ai thinking">Thinking…</div>
               )}
               <div ref={chatEndRef} />
             </div>
 
             {chatImagePreview && (
-              <div style={{ padding: '0 12px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <img src={chatImagePreview} alt="attach" style={{ height: 48, borderRadius: 8 }} />
-                <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px' }} onClick={() => { setChatImageFile(null); setChatImagePreview(null); }}>
+              <div className="chat-attach-preview">
+                <img src={chatImagePreview} alt="attach" />
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setChatImageFile(null); setChatImagePreview(null); }}>
                   <X size={14} />
                 </button>
               </div>
             )}
-            
+
             <form className="chat-input-area" onSubmit={handleSendMessage}>
               <input
                 ref={chatImageRef}
@@ -1828,11 +1826,19 @@ export default function App() {
                   setChatImagePreview(URL.createObjectURL(f));
                 }}
               />
-              <button type="button" className="btn btn-secondary" style={{ padding: '12px', borderRadius: '12px', minWidth: 44, minHeight: 44 }} onClick={() => chatImageRef.current?.click()} title="Attach meal photo">
+              <button type="button" className="btn btn-secondary btn-icon" onClick={() => chatImageRef.current?.click()} title="Attach meal photo">
                 <Camera size={18} />
               </button>
-              <input className="input-field" style={{ flex: 1, marginBottom: 0 }} type="text" placeholder="Log food, water, or ask anything…" value={chatInput} onChange={(e) => setChatInput(e.target.value)} disabled={chatLoading} />
-              <button className="btn" type="submit" style={{ padding: '12px', borderRadius: '12px', minWidth: 44, minHeight: 44 }} disabled={chatLoading}>
+              <input
+                className="input-field"
+                style={{ flex: 1, marginBottom: 0 }}
+                type="text"
+                placeholder="Log food, water, or ask anything…"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                disabled={chatLoading}
+              />
+              <button className="btn btn-icon" type="submit" disabled={chatLoading}>
                 <Send size={18} />
               </button>
             </form>
